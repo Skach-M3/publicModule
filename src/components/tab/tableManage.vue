@@ -49,7 +49,7 @@
         :show-checkbox="false"
         node-key="id"
         default-expand-all
-        :expand-on-click-node="false"
+        :expand-on-click-node="true"
         :check-on-click-node="true"
         @node-click="changeData"
         @check-change="handleCheckChange"
@@ -105,18 +105,16 @@
               <el-menu-item index="1" @click="exchangeCharacterList(0)">
                 <span slot="title">人口学</span>
               </el-menu-item>
-              <el-menu-item index="3" @click="exchangeCharacterList(2)">
+              <el-menu-item index="3" @click="exchangeCharacterList(1)">
                 <span slot="title">生理指标</span>
               </el-menu-item>
-              <el-menu-item index="4" @click="exchangeCharacterList(3)">
+              <el-menu-item index="4" @click="exchangeCharacterList(2)">
                 <span slot="title">行为学</span>
               </el-menu-item>
             </el-menu>
           </el-aside>
           <el-main>
-            <el-checkbox v-model="checkAll" @change="handleCheckAllChange"
-              >全选</el-checkbox
-            >
+            <el-checkbox v-model="checkAll" @change="handleCheckAllChange">全选</el-checkbox>
             <div style="margin: 15px 0"></div>
             <el-checkbox-group
               v-model="checkedCharacter"
@@ -150,75 +148,42 @@
         </el-select> -->
       </template>
       <el-card class="right_table_topCard">
-        <el-table
-          :data="filerInfoData"
-          style="width: 100%"
-          max-height="700px"
-          stripe
-        >
-          <el-table-column
-            v-for="(item, index) in Object.keys(filerInfoData[0])"
-            :key="index"
-            :prop="item"
-            :label="item"
-          >
+        <el-table :data="filerInfoData" style="width: 100%" max-height="700px" stripe>
+          <el-table-column v-for="(value, key) in filerInfoData[0]" :key="key" :prop="key" :label="key">
           </el-table-column>
+          <!-- <el-table-column label="操作">
+            <template slot-scope="scope">
+              <el-button
+                type="primary"
+                icon="el-icon-edit"
+                circle
+                @click="editTable(scope.row,scope.rowid)"></el-button>
+            </template>
+          </el-table-column> -->
         </el-table>
       </el-card>
-      <el-dialog
-        :title="tableForm_new.field_name"
-        :visible.sync="tableFormVisable"
-        width="40%"
-        :before-close="handleClose"
-      >
-        <el-form
-          ref="tableFormRef"
-          :model="tableForm_new"
-          label-width="160px"
-          style="margin-left: 15%"
-        >
+      <el-dialog :title="tableForm_new.field_name" :visible.sync="tableFormVisable" width="40%" :before-close="handleClose">
+        <el-form ref="tableFormRef" :model="tableForm_new" label-width="160px" style="margin-left: 15%">
           <el-form-item label="特征描述：" prop="characterization">
-            <el-input
-              v-model="tableForm_new.characterization"
-              style="width: 49%"
-            ></el-input>
+            <el-input v-model="tableForm_new.characterization" style="width: 49%"></el-input>
           </el-form-item>
           <el-form-item label="所属疾病：" prop="in_disease">
             <el-select v-model="tableForm_new.in_disease">
-              <el-option-group
-                v-for="group in diseaseOptions"
-                :key="group.label"
-                :label="group.label"
-              >
-                <el-option
-                  v-for="item in group.options"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                >
+              <el-option-group v-for="group in diseaseOptions" :key="group.label" :label="group.label">
+                <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value">
                 </el-option>
               </el-option-group>
             </el-select>
           </el-form-item>
           <el-form-item label="是否为疾病标准指标：" prop="is_standard">
             <el-select ref="is_standard" v-model="tableForm_new.standard">
-              <el-option
-                v-for="item in standardOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              >
+              <el-option v-for="item in standardOptions" :key="item.value" :label="item.label" :value="item.value">
               </el-option>
             </el-select>
           </el-form-item>
           <el-form-item label="数据类型：" prop="data_type">
             <el-select ref="data_type" v-model="tableForm_new.data_type">
-              <el-option
-                v-for="item in typeOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              >
+              <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value">
               </el-option>
             </el-select>
           </el-form-item>
@@ -233,10 +198,11 @@
 </template>
 <script>
 import { getRequest, postRequest } from "@/utils/api";
-import { treeData, treeDataDialog } from "@/components/tab/treeTargetData.js";
-import { tableInfoData } from "@/components/tab/TableData.js";
+// import { treeData, treeDataDialog } from "@/components/tab/treeTargetData.js";
+// import { tableInfoData } from "@/components/tab/TableData.js";
 import { getTableData } from "@/api/tableDescribe.js";
 import { getFetures } from "@/api/feature.js";
+import { addDisease , removeCate } from "@/api/category";
 
 let id = 1000;
 
@@ -244,11 +210,11 @@ export default {
   data() {
     return {
       // 获取虚拟树形结构数据
-      treeData: JSON.parse(JSON.stringify(treeData)),
+      treeData: [],
       // 获取虚拟表格数据
-      tableInfoData: JSON.parse(JSON.stringify(tableInfoData)),
+      tableInfoData: [],
 
-      treeDialogData: JSON.parse(JSON.stringify(treeDataDialog)),
+      treeDialogData: [],
 
       filerInfoData: [],
 
@@ -262,72 +228,11 @@ export default {
 
       characterOptListId: 0,
 
-      characterOptList_Arr: [
-        [
-          {
-            characterId: 1,
-            chName: "诊断2",
-          },
-          {
-            characterId: 2,
-            chName: "诊断3",
-          },
-          {
-            characterId: 3,
-            chName: "诊断4",
-          },
-          {
-            characterId: 4,
-            chName: "诊断5",
-          },
-          {
-            characterId: 5,
-            chName: "诊断6",
-          },
-          {
-            characterId: 6,
-            chName: "诊断7",
-          },
-          {
-            characterId: 7,
-            chName: "诊断8",
-          },
-        ],
-        [
-          {
-            characterId: 8,
-            chName: "检查1",
-          },
-          {
-            characterId: 9,
-            chName: "检查2",
-          },
-          {
-            characterId: 10,
-            chName: "检查3",
-          },
-          {
-            characterId: 11,
-            chName: "检查4",
-          },
-          {
-            characterId: 12,
-            chName: "检查5",
-          },
-          {
-            characterId: 13,
-            chName: "检查6",
-          },
-          {
-            characterId: 14,
-            chName: "检查7",
-          },
-          {
-            characterId: 15,
-            chName: "检查8",
-          },
-        ],
-      ],
+      characterOptList_Arr: [],
+
+      checkedCharacter_Arr: [],
+
+      nowListIndex: 0,
 
       // 多选框
       checkAll: false,
@@ -336,6 +241,7 @@ export default {
 
       diseaseName: "",
       tableNameList: [],
+      fileds: [],
       //tableData: [],
       isView: false,
       rowid: 0,
@@ -441,9 +347,9 @@ export default {
     };
   },
   created() {
-    this.filerInfoData = this.tableInfoData.filter(
-      (item) => item.is_standard === 1
-    );
+    // this.filerInfoData = this.tableInfoData.filter(
+    //   (item) => item.is_standard === 1
+    // );
     this.getCatgory();
   },
   methods: {
@@ -451,15 +357,51 @@ export default {
     // payload：疾病名，特征列表
     // respond：新的病种列表
     append() {
-      const newChild = { id: id++, label: this.diseaseName, isLeafs: true };
+      const newChild = { id: id++, label: this.diseaseName, isLeafs: true, isCommon: false};
       if (!this.nodeData.children) {
         this.$set(this.nodeData, "children", []);
       }
+      let k = 0;
+      for (let j = 0; j < this.checkedCharacter_Arr.length; j++) {
+        for (let i = 0; i < this.checkedCharacter_Arr[j].length; i++) {
+          this.fileds[k] = this.checkedCharacter_Arr[j][i].featureName
+          k++;
+        }
+      }
+      console.log("特征列表:")
+      console.log(this.fileds)
+      postRequest("/filed/updateFiled", {
+        diseaseName: this.diseaseName,
+        fileds: this.fileds
+      }).then((res) => {
+        console.log(res);
+      });
+      // 发送请求新增一个病种信息（目录结构）
+      let catagoryNode = {
+        label: this.diseaseName,
+        catLevel: 2,
+        parentId: this.nodeData.id,
+        isLeafs: 1,
+        isCommon: 0,
+        path: this.nodeData.path + "/" + this.diseaseName,
+        isDelete: 0,
+        children: []
+      };
+
+      let catagoryNodeJSON = JSON.stringify(catagoryNode);
+      addDisease("/api/addFeature2", catagoryNodeJSON).then(response => {
+        this.getCatgory(); //刷新目录结构
+        console.log(response.data);
+      }).catch(error => {
+        alert("新增疾病目录错误" + error)
+      })
       this.nodeData.children.push(newChild);
       this.nodeData = {};
       this.cleanInput();
       this.characterId = 0;
       this.characterVisible = false;
+      this.characterOptList_Arr = [];
+      this.checkedCharacter_Arr = [];
     },
 
     appendDisease() {
@@ -472,6 +414,25 @@ export default {
       if (!this.nodeData.children) {
         this.$set(this.nodeData, "children", []);
       }
+      // 发送请求新增一个病种信息（目录结构）
+      let catagoryNode = {
+        label: this.diseaseName,
+        catLevel: 1,
+        parentId: this.nodeData.id,
+        isLeafs: 0,
+        isCommon: 0,
+        path: this.nodeData.path + "/" + this.diseaseName,
+        isDelete: 0,
+        children: []
+      };
+
+      let catagoryNodeJSON = JSON.stringify(catagoryNode);
+      addDisease("/api/appendDisease2", catagoryNodeJSON).then(response => {
+        this.getCatgory(); //刷新目录结构
+        console.log(response.data);
+      }).catch(error => {
+        alert("新增疾病目录错误" + error)
+      })
       this.nodeData.children.push(newChild);
       this.nodeData = {};
       this.cleanInput();
@@ -483,6 +444,11 @@ export default {
       const children = parent.data.children || parent.data;
       const index = children.findIndex((d) => d.id === data.id);
       children.splice(index, 1);
+      removeCate("/api/category/remove",data).then(response=>{ // data就是要删除的目录信息
+        console.log(response.data);
+      }).catch(error=>{
+        console.log(error);
+      })
     },
 
     addDisease() {
@@ -492,19 +458,64 @@ export default {
         children: [],
         isLeafs: false,
       };
+      // 发送请求新增一个病种信息（目录结构）
+      let catagoryNode = {
+        label: this.diseaseName,
+        catLevel: 1,
+        parentId: 0,
+        isLeafs: 0,
+        isCommon: 0,
+        path: this.diseaseName,
+        isDelete: 0,
+        children: []
+      };
+
+      let catagoryNodeJSON = JSON.stringify(catagoryNode);
+      addDisease("/api/addDisease2", catagoryNodeJSON).then(response => {
+        this.getCatgory(); //刷新目录结构
+        console.log(response.data);
+      }).catch(error => {
+        alert("新增疾病目录错误" + error)
+      })
       this.treeData.push(newNode);
       this.cleanInput();
     },
     getCatgory() {
       getRequest("/api/category2").then((response) => {
         this.treeData = response.data;
+        console.log(typeof (this.treeData));
         console.log(this.treeData);
       });
     },
 
     addCharacteration() {
+      getFetures("/api/feature/getFeatures", 0).then(response => {
+        console.log("特征为：");
+        console.log(response.data);
+        this.characterOptList_Arr[0] = response.data;
+        this.checkedCharacter_Arr[0] = [];
+        this.characterOptList = response.data;
+        this.checkedCharacter = this.checkedCharacter_Arr[0]
+      }).catch(error => {
+        console.log(error);
+      })
+      getFetures("/api/feature/getFeatures", 2).then(response => {
+        console.log("特征为：");
+        console.log(response.data);
+        this.characterOptList_Arr[1] = response.data;
+        this.checkedCharacter_Arr[1] = [];
+      }).catch(error => {
+        console.log(error);
+      })
+      getFetures("/api/feature/getFeatures", 3).then(response => {
+        console.log("特征为：");
+        console.log(response.data);
+        this.characterOptList_Arr[2] = response.data;
+        this.checkedCharacter_Arr[2] = [];
+      }).catch(error => {
+        console.log(error);
+      })
       this.characterVisible = true;
-      this.characterOptList = this.characterOptList_Arr[0];
     },
 
     handleCheckChange(data, checked) {
@@ -529,11 +540,16 @@ export default {
 
     changeData(...theArgs) {
       let disease = theArgs[0].label; //点击的节点的名字 `?diseaseName=${disease}`
-      console.log(disease);
-      postRequest("/filed/getAllFiled", { diseaseName: disease }).then((res) => {
-        console.log(res);
-        this.filerInfoData = res.data;
-      });
+      console.log(theArgs);
+      if (theArgs[0].isLeafs == 1) {
+        postRequest("/filed/getAllFiled", { diseaseName: disease }).then((res) => {
+          console.log(res);
+          this.filerInfoData = res.data;
+        });
+      } else {
+        this.filerInfoData = []
+
+      }
     },
 
     markNode(data) {
@@ -567,12 +583,15 @@ export default {
       } else {
         this.checkedCharacter = [];
       }
+      this.checkedCharacter_Arr[this.nowListIndex] = this.checkedCharacter
     },
 
-    handleCheckedCharacterChange(value) {
-      console.log(this.checkedCharacter);
-      let checkedCount = value.length;
+    handleCheckedCharacterChange() {
+      console.log("已选择列表:")
+      console.log(this.checkedCharacter_Arr);
+      let checkedCount = this.checkedCharacter.length;
       this.checkAll = checkedCount === this.characterOptList.length;
+      this.checkedCharacter_Arr[this.nowListIndex] = this.checkedCharacter
     },
 
     cleanCheckBox() {
@@ -622,20 +641,18 @@ export default {
       );
     },
 
-    chooseCharacter(item){
-        this.exchangeCharacterList(0);
-        this.characterVisible = true
-        this.characterOptItem = item
+    chooseCharacter(item) {
+      this.exchangeCharacterList(0);
+      this.characterVisible = true
+      this.characterOptItem = item
     },
 
-    exchangeCharacterList(index){
-      getFetures("/api/feature/getFeatures",index).then(response=>{
-        console.log("特征为：");
-        console.log(response.data);
-        this.characterOptList = response.data;
-      }).catch(error=>{
-        console.log(error);
-      })
+    exchangeCharacterList(index) {
+      this.nowListIndex = index;
+      this.characterOptList = this.characterOptList_Arr[index];
+      this.checkedCharacter = this.checkedCharacter_Arr[index];
+      let checkedCount = this.checkedCharacter.length;
+      this.checkAll = checkedCount === this.characterOptList.length;
     },
 
     // getTableData() {
@@ -677,7 +694,8 @@ export default {
       this.tempTbaleType = "";
       this.handleCurrentChange(1);
     },
-    editTable(tempTableName, row, id) {
+    editTable(row, id) {
+      console.log(row)
       this.tableForm = row;
       this.rowid = id;
       this.tableForm_new = JSON.parse(JSON.stringify(row));

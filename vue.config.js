@@ -4,8 +4,8 @@ module.exports = defineConfig({
   transpileDependencies: true,
   lintOnSave: false,
   devServer: {
-    host: "",
-    open: true,
+    // host: "localhost",
+    // open: true,
     // 代理配置
     proxy: {
       "/echarts": {
