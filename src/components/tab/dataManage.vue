@@ -371,14 +371,10 @@
 import { getRequest, postRequest } from "@/api/user";
 import { getFetures } from "@/api/feature.js";
 import { getCategory, addDisease, removeCate } from "@/api/category";
-import { getTableDes, getTableData, getFielterData} from "@/api/tableDescribe.js";
+import { getTableDes, getTableData} from "@/api/tableDescribe.js";
 import { mapGetters, mapMutations, mapState, mapActions } from "vuex";
 import { disOptions } from "@/components/tab/constData.js";
-import { resetForm, debounce, tabSwitch } from "../mixins/mixin";
-// import { treeData } from "@/components/tab/treeData.js";
-import { tableData, tableData2 } from "@/components/tab/TableData.js";
-import { addTableData } from "@/components/tab/addTableData.js";
-import axios from 'axios';
+import { resetForm, debounce } from "../mixins/mixin";
 let id = 1000;
 
 export default {
@@ -441,7 +437,7 @@ export default {
       },
       characterOptList:[
       ],
-      addTableData: addTableData,
+      addTableData: [],
       input3: '',
       select: '',
 
@@ -914,14 +910,18 @@ export default {
           "Content-Type": "application/json",
         },
       };
-
+      console.log("请求参数："+JSON.stringify(filterConditions))
       this.$axios(this.options).then(res=>{
         this.addTableData = res.data;
         console.log("数据:")
         console.log(this.addTableData)
+        this.showAddTableData = true
+      }).catch((error)=>{
+        this.$message.error("获取数据失败");
+        console.log("获取数据失败"+error);
       });
         //展示表格
-        this.showAddTableData = true
+        
         //发送axios请求
         // getFielterData("/api/filterTableData",this.addDataForm, this.nodeData).then(response=>{
         //   console.log(response.data);
@@ -973,8 +973,7 @@ export default {
       }).catch(error=>{
         console.log(error);
       })
-    }
-  },
+    },
     ...mapMutations(["SetDataList"]),
     ...mapActions(["getDataList"]),
     getData(tablename) {
@@ -987,15 +986,6 @@ export default {
         console.log("patientTable:"+res.data);
         this.getData_loading = false;
       });
-    },
-    changeLabel(name, label) {
-      console.log("name: ")
-      console.log(name)
-
-      console.log("label:")
-      console.log(label)
-
-      this.featuresMap[name] = label;
     },
 
     handleEdit(index, row) {
@@ -1066,6 +1056,8 @@ export default {
         );
       }
     },
+  },
+    
 };
 </script>
 
