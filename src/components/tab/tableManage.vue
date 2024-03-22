@@ -204,8 +204,6 @@ import { getTableData } from "@/api/tableDescribe.js";
 import { getFetures } from "@/api/feature.js";
 import { addDisease , removeCate } from "@/api/category";
 
-let id = 1000;
-
 export default {
   data() {
     return {
@@ -357,10 +355,6 @@ export default {
     // payload：疾病名，特征列表
     // respond：新的病种列表
     append() {
-      const newChild = { id: id++, label: this.diseaseName, isLeafs: true, isCommon: false};
-      if (!this.nodeData.children) {
-        this.$set(this.nodeData, "children", []);
-      }
       let k = 0;
       for (let j = 0; j < this.checkedCharacter_Arr.length; j++) {
         for (let i = 0; i < this.checkedCharacter_Arr[j].length; i++) {
@@ -379,7 +373,7 @@ export default {
       // 发送请求新增一个病种信息（目录结构）
       let catagoryNode = {
         label: this.diseaseName,
-        catLevel: 2,
+        catLevel: this.catLevel+1,
         parentId: this.nodeData.id,
         isLeafs: 1,
         isCommon: 0,
@@ -395,7 +389,6 @@ export default {
       }).catch(error => {
         alert("新增疾病目录错误" + error)
       })
-      this.nodeData.children.push(newChild);
       this.nodeData = {};
       this.cleanInput();
       this.characterId = 0;
@@ -405,19 +398,10 @@ export default {
     },
 
     appendDisease() {
-      const newChild = {
-        id: id++,
-        label: this.diseaseName,
-        children: [],
-        isLeafs: false,
-      };
-      if (!this.nodeData.children) {
-        this.$set(this.nodeData, "children", []);
-      }
       // 发送请求新增一个病种信息（目录结构）
       let catagoryNode = {
         label: this.diseaseName,
-        catLevel: 1,
+        catLevel: this.nodeData.catLevel+1,
         parentId: this.nodeData.id,
         isLeafs: 0,
         isCommon: 0,
@@ -433,7 +417,6 @@ export default {
       }).catch(error => {
         alert("新增疾病目录错误" + error)
       })
-      this.nodeData.children.push(newChild);
       this.nodeData = {};
       this.cleanInput();
       this.dialogDiseaseVisible2 = false;
@@ -444,7 +427,7 @@ export default {
       const children = parent.data.children || parent.data;
       const index = children.findIndex((d) => d.id === data.id);
       children.splice(index, 1);
-      removeCate("/api/category/remove",data).then(response=>{ // data就是要删除的目录信息
+      removeCate("/api/category/remove2",data).then(response=>{ // data就是要删除的目录信息
         console.log(response.data);
       }).catch(error=>{
         console.log(error);
@@ -452,12 +435,6 @@ export default {
     },
 
     addDisease() {
-      const newNode = {
-        id: id++,
-        label: this.diseaseName,
-        children: [],
-        isLeafs: false,
-      };
       // 发送请求新增一个病种信息（目录结构）
       let catagoryNode = {
         label: this.diseaseName,
@@ -477,7 +454,6 @@ export default {
       }).catch(error => {
         alert("新增疾病目录错误" + error)
       })
-      this.treeData.push(newNode);
       this.cleanInput();
     },
     getCatgory() {

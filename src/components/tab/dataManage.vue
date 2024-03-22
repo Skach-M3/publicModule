@@ -343,22 +343,23 @@
     <div class="right_table">
         <el-card class="right_table_topCard">
           <div class="describe_content">
-            <h3>数据集名称</h3>
+            <h3>{{showDataForm.tableName}}</h3>
             <p style="margin-top:0.5%">
               <i class="el-icon-user"></i>创建人: <span>{{showDataForm.createUser}}</span>
               <i class="el-icon-time"></i>创建时间: <span>{{showDataForm.createTime}}</span>
               <i class="el-icon-folder-opened"></i>所属类别: <span>{{showDataForm.classPath}}</span>
             </p>
           </div>
-
           <!-- 显示表数据 -->
-          <el-table :data="tableData" stripe style="width: 100%" class="custom-table">
-           <el-table-column v-for="(value, key) in tableData[0]" :key="key" :prop="key" :label="key" width="80">
-            <template slot-scope="{ row }">
-              <div class="truncate-text">{{ row[key] }}</div>
-            </template>
-          </el-table-column>
-          </el-table>
+          <div class="tableData">
+            <el-table :data="tableData" stripe style="width: 100%" class="custom-table">
+            <el-table-column v-for="(value, key) in tableData[0]" :key="key" :prop="key" :label="key" width="80">
+              <template slot-scope="{ row }">
+                <div class="truncate-text">{{ row[key] }}</div>
+              </template>
+            </el-table-column>
+            </el-table>
+          </div>
 
 
           
@@ -368,13 +369,13 @@
 </template>
 
 <script>
-import { getRequest, postRequest } from "@/api/user";
+import { getRequest, postRequest, saveParentDisease } from "@/api/user";
 import { getFetures } from "@/api/feature.js";
 import { getCategory, addDisease, removeCate } from "@/api/category";
 import { getTableDes, getTableData} from "@/api/tableDescribe.js";
 import { mapGetters, mapMutations, mapState, mapActions } from "vuex";
 import { disOptions } from "@/components/tab/constData.js";
-import { resetForm, debounce } from "../mixins/mixin";
+import { resetForm, debounce } from "@/components/mixins/mixin.js";
 let id = 1000;
 
 export default {
@@ -411,6 +412,7 @@ export default {
       showAddTableData: false,
       characterId:1,
       showDataForm: {
+          tableName:'',
           createUser:'',
           createTime:'',
           classPath:''
@@ -530,7 +532,7 @@ export default {
       });
     }, 200);
     this.getCatgory();
-    this.getTableDescribe("1005")
+    this.getTableDescribe("1005","copd")
     this.getTableData("1005","copd");
     
   },
@@ -748,7 +750,8 @@ export default {
         }
       });
     },
-    getTableDescribe(id){
+    getTableDescribe(id, label){
+      this.showDataForm.tableName = label;
       getTableDes("/api/tableDescribe",id).then(response=>{
         this.showDataForm.createUser = response.data.createUser;
         this.showDataForm.createTime = response.data.createTime;
@@ -771,7 +774,7 @@ export default {
     changeData(data){
       if(data.isLeafs==1) {
         //获取描述信息
-         this.getTableDescribe(data.id);
+        this.getTableDescribe(data.id, data.label);
         //获取数据信息
         this.getTableData(data.id, data.label);
 
@@ -824,8 +827,14 @@ export default {
     },
 
     addDisease() {
-      const newNode = { id: id++, label: this.diseaseName, children: [] , isLeafs: false};
-      this.treeData.push(newNode);
+      console.log("name:",this.diseaseName)
+      let diseaseName = this.diseaseName;
+      saveParentDisease("/api/addParentDisease", diseaseName).then(response=>{
+        this.getCatgory();
+      }).catch(error=>{
+      })
+      // const newNode = { id: id++, label: this.diseaseName, children: [] , isLeafs: false};
+      // this.treeData.push(newNode);
       this.cleanInput()
     },
 
@@ -920,14 +929,6 @@ export default {
         this.$message.error("获取数据失败");
         console.log("获取数据失败"+error);
       });
-        //展示表格
-        
-        //发送axios请求
-        // getFielterData("/api/filterTableData",this.addDataForm, this.nodeData).then(response=>{
-        //   console.log(response.data);
-        // }).catch(error=>{
-        //   console.log("数据筛选失败！！！！！！！！！！");
-        // })
         let s = JSON.stringify(this.addDataForm.characterList, null, 2);
         console.log("this.addDataForm:")
         console.log(this.addDataForm)
@@ -1105,7 +1106,8 @@ export default {
   border-radius: 3px;
   border-left: 1px solid #e6e6e6;
   border-right: 1px solid #e6e6e6;
-  border-top: 1px solid #e6e6e6;
+  border-top: 1px solid #e6e6e6; 
+  border-bottom: none;
 }
 
 .custom-tree-node {
@@ -1119,9 +1121,11 @@ export default {
 
 .right_table {
   display: inline-block;
-  height: auto;
+  height: 85%;
   width: 75%;
   position: absolute;
+  border: none;
+  /* overflow-y: auto; */
 }
 
 .right_table_topCard {
@@ -1131,8 +1135,10 @@ export default {
   border-radius: 3px;
   border-bottom: 1px solid #e6e6e6;
   position: relative;
-  top: 2%;
+  /* top: 2%; */
   left: 1%;
+  /* overflow-y: auto; */
+
 }
 
 .describe_content {
@@ -1220,5 +1226,10 @@ export default {
 }
 .custom-table tr {
     background-color: #dcf3fc !important;
+}
+.tableData {
+  width: 100%;
+  height: 750px;
+  overflow-y: auto;
 }
 </style>
