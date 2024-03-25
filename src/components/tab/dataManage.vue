@@ -24,7 +24,6 @@
         :check-on-click-node="true"
         :highlight-current="true"
         @node-click="changeData"
-        @check="changeData"
         @check-change="handleCheckChange">
         <span class="custom-tree-node" slot-scope="{ node, data }">
           <span>{{ node.label }}</span>
@@ -756,7 +755,6 @@ export default {
         this.showDataForm.createUser = response.data.createUser;
         this.showDataForm.createTime = response.data.createTime;
         this.showDataForm.classPath = response.data.classPath;
-        this.tableData = [];
       })
       .catch(error=>{
         console.log("错误",error)
@@ -776,6 +774,7 @@ export default {
         //获取描述信息
         this.getTableDescribe(data.id, data.label);
         //获取数据信息
+        this.tableData = [];
         this.getTableData(data.id, data.label);
 
       }
@@ -832,6 +831,7 @@ export default {
       saveParentDisease("/api/addParentDisease", diseaseName).then(response=>{
         this.getCatgory();
       }).catch(error=>{
+        console.log("报错：",error);
       })
       // const newNode = { id: id++, label: this.diseaseName, children: [] , isLeafs: false};
       // this.treeData.push(newNode);
